@@ -13,7 +13,7 @@
 
 
 
-double interpolate( std::vector<double> &xData, std::vector<double> &yData, double x, bool extrapolate )
+double interpolate( const std::vector<double> &xData, const std::vector<double> &yData, double x, bool extrapolate )
 {
   int size = xData.size();
   int i = 0;                                          // find left end of interval for interpolation
@@ -35,8 +35,8 @@ double interpolate( std::vector<double> &xData, std::vector<double> &yData, doub
   return yL + dydx * ( x - xL );                      // linear interpolation
 }
 
-double* interpolate( std::vector<double> &xData, std::vector<double> &yData1, std::vector<double> &yData2,
-		  std::vector<double> &yData3, double x, bool extrapolate)
+double* interpolate( const std::vector<double> &xData, const std::vector<double> &yData1, const std::vector<double> &yData2,
+		  const std::vector<double> &yData3, double x, bool extrapolate)
 {
   int size = xData.size();
   int i = 0;                                          // find left end of interval for interpolation

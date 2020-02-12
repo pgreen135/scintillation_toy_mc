@@ -28,9 +28,8 @@ time_parameterisation::time_parameterisation(const double size): step_size{size}
 }
 
 // parameterisation generation function
-void time_parameterisation::generateparam(int index) {
-    gRandom->SetSeed(0);
-
+void time_parameterisation::generateparam(const int &index) {
+    
     // get distance 
     double distance_in_cm = (index * step_size) + 25;
     
@@ -104,16 +103,12 @@ void time_parameterisation::generateparam(int index) {
     // all subsequent calls check if it has been generated previously and are ~100+ times quicker
     double arrival_time = fVUVTiming.GetRandom(min,max);
     // add timing to the vector of timings and range to vectors of ranges
-    VUV_timing[index] = fVUVTiming;
-    VUV_max[index] = max;
-    VUV_min[index] = min;
-    
+    writeTiming(index, fVUVTiming, min, max);
 }
 
 // VUV arrival times calculation function
-vector<double> time_parameterisation::getVUVTime(double distance, int number_photons) {
-    gRandom->SetSeed(0);
-
+vector<double> time_parameterisation::getVUVTime(const double &distance, const int &number_photons) {
+    
     // pre-allocate memory
     std::vector<double> arrival_time_distrb;
     arrival_time_distrb.clear();
@@ -131,8 +126,10 @@ vector<double> time_parameterisation::getVUVTime(double distance, int number_pho
     else {
         // determine nearest parameterisation in discretisation
         int index = std::round((distance - 25) / step_size);
+        
         // check whether required parameterisation has been generated, generating if not
-        if (VUV_timing[index].GetNdim() == 0) {
+        if (VUV_timing[index].GetNdim() == 0){
+            // generate parameterisation
             generateparam(index);
         }
         // randomly sample parameterisation for each photon
@@ -144,7 +141,7 @@ vector<double> time_parameterisation::getVUVTime(double distance, int number_pho
 }
 
 // vis arrival times calculation function
-vector<double> time_parameterisation::getVisTime(TVector3 ScintPoint, TVector3 OpDetPoint, int number_photons) {
+vector<double> time_parameterisation::getVisTime(const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &number_photons) {
     // *************************************************************************************************
     // Calculation of earliest arrival times and corresponding unsmeared distribution
     // *************************************************************************************************
@@ -191,8 +188,6 @@ vector<double> time_parameterisation::getVisTime(TVector3 ScintPoint, TVector3 O
     // Smearing of arrival time distribution
     // *************************************************************************************************
    
-    gRandom->SetSeed(0);
-
     // calculate fastest time possible
     // vis part
     double vis_time = Visdist/vis_vmean;
@@ -204,7 +199,7 @@ vector<double> time_parameterisation::getVisTime(TVector3 ScintPoint, TVector3 O
     else {
         // find index of required parameterisation
         int index = std::round((VUVdist - 25) / step_size);
-        // find shortest time
+        // get minimum time
         vuv_time = VUV_min[index];
     }
     // sum
@@ -269,12 +264,11 @@ vector<double> time_parameterisation::getVisTime(TVector3 ScintPoint, TVector3 O
     return transport_time_vis;
 }
 
-double time_parameterisation::getVUVmin(int index){
+void time_parameterisation::writeTiming(const int &index, const TF1 &f, const double &min, const double &max) {
 
-    if (VUV_min[index] == 0) {
-        generateparam(index);
-    }   
+    // write parameterisation to vector
+    VUV_timing[index] = f;
+    VUV_max[index] = max;
+    VUV_min[index] = min;
 
-    double min = VUV_min[index];
-    return min;
 }

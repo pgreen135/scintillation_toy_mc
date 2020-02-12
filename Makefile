@@ -1,5 +1,5 @@
-CXXFLAGS=-std=c++11 -g $(shell root-config --cflags)
-LIBS=$(shell root-config --libs) -lMathMore
+CXXFLAGS=-std=c++11 -g $(shell root-config --cflags) -fopenmp
+LIBS=$(shell root-config --libs) -lMathMore -fopenmp
 
 run : analyze_light
 			@echo "Finished Compiling..."

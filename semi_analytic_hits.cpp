@@ -53,8 +53,7 @@ semi_analytic_hits::semi_analytic_hits() {
 
 // VUV hits calculation
 int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type) {
-  gRandom->SetSeed(0);
-
+  
   // distance and angle between ScintPoint and OpDetPoint
   double distance = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
   double cosine = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2)) / distance;
@@ -119,14 +118,13 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
 
 // Visible hits calculation
 int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type) {
-  gRandom->SetSeed(0);
-
+ 
   // 1). calculate total number of hits of VUV photons on reflective foils via solid angle + Gaisser-Hillas corrections:
 
   // set cathode plane struct for solid angle function
   acc cathode_plane; 
-  cathode_plane.ax = x_foils; cathode_plane.ay = y_foils; cathode_plane.az = z_foils;   // centre coordinates of cathode plane
-  cathode_plane.w = y_dimension_foils; cathode_plane.h = z_dimension_foils;                        // width and height in cm
+  cathode_plane.ax = x_foils; cathode_plane.ay = y_foils; cathode_plane.az = z_foils;   		// centre coordinates of cathode plane
+  cathode_plane.w = y_dimension_foils; cathode_plane.h = z_dimension_foils;                     // width and height in cm
 
   // get scintpoint coords relative to centre of cathode plane
   TVector3 cathodeCentrePoint(x_foils,y_foils,z_foils);
@@ -194,6 +192,7 @@ int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &Sci
   // calculate number of hits via geometeric acceptance  
   double hits_geo = (solid_angle_detector / (2*pi)) * cathode_hits_rec;
 
+  /
   // distance to hotspot
   double distance_vuv = sqrt(pow(ScintPoint[0] - hotspot[0],2) + pow(ScintPoint[1] - hotspot[1],2) + pow(ScintPoint[2] - hotspot[2],2));
   // distance from hotspot to arapuca

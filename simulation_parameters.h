@@ -3,11 +3,11 @@
 namespace parameters {
 	
 	// output file
-	const char *output_file_name = "testing.root";
+	const char *output_file_name = "threading_testing.root";
 
 	// events to generate
 	// number
-	const int number_events =  1000;
+	const int number_events =  10000;
 	
 	// type
 
