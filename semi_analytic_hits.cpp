@@ -23,32 +23,8 @@ semi_analytic_hits::semi_analytic_hits() {
     }
   _mathmore_loaded_ = true;
 
-  std::cout<<"Light simulation for DUNE Single Phase detector"<<std::endl;
-
-  // initialise gaisser hillas functions for VUV Rayleigh scattering correction
-  // DUNE-SP
-  fReference_to_corner = sqrt(pow(fYactive_corner, 2) + pow(fZactive_corner, 2));
-  for (int bin = 0; bin < 9; bin ++) {
-    for (int j = 0; j < 4; j++) {
-      fGHVUVPars[j][bin] = GH_SP[j][bin];
-    }
-  }
-  for (int i = 0; i < 2; i++) {
-    fVUVBorderCorr[i] = BORDER_SP[i];
-  }
-  
-  // initialise pol5 functions for visible hits correction
-  double pars_ini_vis[6] = {0,0,0,0,0,0};
-  for (int bin = 0; bin < 9; bin++) {
-    VIS_pol[bin] = new TF1 ("pol", "pol5", 0, 2000);
-    for (int j = 0; j < 6; j++){
-      pars_ini_vis[j] = VIS_SP[j][bin];
-    }
-    VIS_pol[bin]->SetParameters(pars_ini_vis);
-  }
-
+  std::cout<<"Light simulation for SBND detector"<<std::endl;
   std::cout << std::endl;
-
 }
 
 // VUV hits calculation
@@ -83,6 +59,10 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
     // Solid angle of a disk
     solid_angle = Disk_SolidAngle(d, h, radius);
   }
+  // dome aperture
+  else if (optical_detector_type == 2){
+    solid_angle = Omega_Dome_Model(distance, theta);
+  }
   else {
     std::cout << "Error: Invalid optical detector type." << endl;
     exit(1);
@@ -91,24 +71,50 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
   // calculate number of photons hits by geometric acceptance: accounting for solid angle and LAr absorbtion length
   double hits_geo = exp(-1.*distance/L_abs) * (solid_angle / (4*pi)) * Nphotons_created;
 
-  // apply Gaisser-Hillas correction for Rayleigh scattering distance and angular dependence
+  // determine Gaisser-Hillas correction for Rayleigh scattering distance and angular dependence, accounting for border effects
   // offset angle bin
   int j = (theta/delta_angulo);
+  // distance from center for border corrections
+  double r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); 
+  // GH parameters
+  double pars_ini[4] = {0,0,0,0};
+  double s1, s2, s3;  
+  // determine initial parameters and border corrections by optical detector type
+  // flat PDs
+  if (optical_detector_type == 0 || optical_detector_type == 1){
+    pars_ini[0] = fGHVUVPars_flat[0][j];
+    pars_ini[1] = fGHVUVPars_flat[1][j];
+    pars_ini[2] = fGHVUVPars_flat[2][j];
+    pars_ini[3] = fGHVUVPars_flat[3][j];
+    s1 = interpolate( angulo_flat, slopes1_flat, theta, true);
+    s2 = interpolate( angulo_flat, slopes2_flat, theta, true);
+    s3 = interpolate( angulo_flat, slopes3_flat, theta, true);
+  }
+  // dome PDs
+  else if (optical_detector_type == 2) {
+    pars_ini[0] = fGHVUVPars_dome[0][j];
+    pars_ini[1] = fGHVUVPars_dome[1][j];
+    pars_ini[2] = fGHVUVPars_dome[2][j];
+    pars_ini[3] = fGHVUVPars_dome[3][j];
+    s1 = interpolate( angulo_dome, slopes1_dome, theta, true);
+    s2 = interpolate( angulo_dome, slopes2_dome, theta, true);
+    s3 = interpolate( angulo_dome, slopes3_dome, theta, true);
+  }
+  else {
+    std::cout << "Error: Invalid optical detector type." << endl;
+    exit(1);
+  }
+  // add border correction
+  pars_ini[0] = pars_ini[0] + s1 * r_distance;
+  pars_ini[1] = pars_ini[1] + s2 * r_distance;
+  pars_ini[2] = pars_ini[2] + s3 * r_distance;
+  pars_ini[3] = pars_ini[3];
   
-  // account for border effects in Gaisser-Hillas function
-  double z_to_corner = abs(ScintPoint[2] - fZactive_corner) - fZactive_corner;
-  double y_to_corner = abs(ScintPoint[1]) - fYactive_corner;
-  double distance_to_corner = sqrt(y_to_corner*y_to_corner + z_to_corner*z_to_corner);  // in the ph-cathode plane
-  
-  double pars_ini_[4] = {fGHVUVPars[0][j] + fVUVBorderCorr[0] * (distance_to_corner - fReference_to_corner),
-                         fGHVUVPars[1][j] + fVUVBorderCorr[1] * (distance_to_corner - fReference_to_corner),
-                         fGHVUVPars[2][j],
-                         fGHVUVPars[3][j]};
-  
-  double GH_correction = GaisserHillas(distance, pars_ini_);
+  // calculate correction factor
+  double GH_correction = GaisserHillas(distance, pars_ini);
   
   // apply correction
-  double hits_rec = gRandom->Poisson( GH_correction*hits_geo/cosine );
+  double hits_rec = gRandom->Poisson(GH_correction*hits_geo/cosine);
 
   // round to integer value, cannot have non-integer number of hits
   int hits_vuv = std::round(hits_rec);
@@ -143,12 +149,26 @@ int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &Sci
   // calculate hits on cathode plane via geometric acceptance
   double cathode_hits_geo = exp(-1.*distance_cathode/L_abs) * (solid_angle_cathode / (4.*pi)) * Nphotons_created;
 
+  // distance from center of detector for border corrections
+  double r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); 
+
   // apply Gaisser-Hillas correction for Rayleigh scattering distance and angular dependence
+  // cathode is always flat case
   // offset angle bin
   int j = (theta_cathode/delta_angulo);  
   // correction
-  double pars_ini_[4] = {fGHVUVPars[0][j], fGHVUVPars[1][j], fGHVUVPars[2][j], fGHVUVPars[3][j]};
-  double GH_correction = GaisserHillas(distance_cathode, pars_ini_);
+  double pars_ini[4] = {fGHVUVPars_flat[0][j], fGHVUVPars_flat[1][j], fGHVUVPars_flat[2][j], fGHVUVPars_flat[3][j]};
+  
+  double s1 = interpolate( angulo_flat, slopes1_flat, theta_cathode, true);
+  double s2 = interpolate( angulo_flat, slopes2_flat, theta_cathode, true);
+  double s3 = interpolate( angulo_flat, slopes3_flat, theta_cathode, true);
+
+  pars_ini[0] = pars_ini[0] + s1 * r_distance;
+  pars_ini[1] = pars_ini[1] + s2 * r_distance;
+  pars_ini[2] = pars_ini[2] + s3 * r_distance;
+  pars_ini[3] = pars_ini[3];
+
+  double GH_correction = GaisserHillas(distance_cathode, pars_ini);
 
   double cathode_hits_rec = GH_correction*cathode_hits_geo/cosine_cathode;
 
@@ -158,6 +178,14 @@ int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &Sci
   // calculate hotspot location  
   TVector3 v_to_wall(x_foils - ScintPoint[0],0,0);        
   TVector3 hotspot = ScintPoint + v_to_wall;
+
+  // distance to hotspot
+  double distance_vuv = sqrt(pow(ScintPoint[0] - hotspot[0],2) + pow(ScintPoint[1] - hotspot[1],2) + pow(ScintPoint[2] - hotspot[2],2));
+  // distance from hotspot to arapuca
+  double distance_vis = sqrt(pow(hotspot[0] - OpDetPoint[0],2) + pow(hotspot[1] - OpDetPoint[1],2) + pow(hotspot[2] - OpDetPoint[2],2));
+  // angle between hotspot and arapuca
+  double cosine_vis = sqrt(pow(hotspot[0] - OpDetPoint[0],2)) / distance_vis;
+  double theta_vis = acos(cosine_vis)*180./pi;
 
   // solid angle :
   double solid_angle_detector = 0;
@@ -184,6 +212,10 @@ int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &Sci
     // Solid angle of a disk
     solid_angle_detector = Disk_SolidAngle(d, h, radius);
   }
+  // dome aperture
+  else if (optical_detector_type == 2){
+    solid_angle_detector = Omega_Dome_Model(distance_vis, theta_vis);
+  }
   else {
     std::cout << "Error: Invalid optical detector type." << endl;
     exit(1);
@@ -192,33 +224,36 @@ int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &Sci
   // calculate number of hits via geometeric acceptance  
   double hits_geo = (solid_angle_detector / (2*pi)) * cathode_hits_rec;
 
-  // distance to hotspot
-  double distance_vuv = sqrt(pow(ScintPoint[0] - hotspot[0],2) + pow(ScintPoint[1] - hotspot[1],2) + pow(ScintPoint[2] - hotspot[2],2));
-  // distance from hotspot to arapuca
-  double distance_vis = sqrt(pow(hotspot[0] - OpDetPoint[0],2) + pow(hotspot[1] - OpDetPoint[1],2) + pow(hotspot[2] - OpDetPoint[2],2));
-  // angle between hotspot and arapuca
-  double cosine_vis = sqrt(pow(hotspot[0] - OpDetPoint[0],2)) / distance_vis;
-  double theta_vis = acos(cosine_vis)*180./pi;
-
-  // apply correction curves, 5th order polynomial 
-  int k = (theta_vis/delta_angle);
-  double hits_rec = VIS_pol[k]->Eval(distance_vuv)*hits_geo/cosine_vis;
-
-  // apply border correction
-  // calculate radial distance from centre
-  double r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); 
-  // interpolate in x for each r bin
-  std::vector<double> interp_vals = {0,0,0,0};
-  for (unsigned int i = 0; i < vDistances_r.size(); i++){
-    interp_vals[i] = interpolate(vDistances_x, VIS_SP_Borders[k][i], std::abs(ScintPoint[0]), false);
+  // apply correction, accounting for scattering, reflections and borders
+  double border_correction;
+  int k = (theta_vis/delta_angulo);
+  if (optical_detector_type == 0 || optical_detector_type == 1) {
+    // interpolate in d_c for each r bin
+    std::vector<double> interp_vals(fVISPars_flat[k].size(), 0.0);
+    for (int i = 0; i < fVISPars_flat[k].size(); i++){
+      interp_vals[i] = interpolate(vDistances_x_flat, fVISPars_flat[k][i], std::abs(plane_depth - ScintPoint[0]), false);
+    }
+    // interpolate in r
+    border_correction = interpolate(vDistances_r_flat, interp_vals, r_distance, false);
   }
-  // interpolate in r
-  double border_correction = interpolate(vDistances_r, interp_vals, r_distance, false);
-  // apply correction
-  double hits_rec_borders = border_correction * hits_rec / cosine_vis;
+  else if (optical_detector_type == 2) {
+    // interpolate in d_c for each r bin
+    std::vector<double> interp_vals(fVISPars_dome[k].size(), 0.0);
+    for (int i = 0; i < fVISPars_dome[k].size(); i++){
+      interp_vals[i] = interpolate(vDistances_x_dome, fVISPars_dome[k][i], std::abs(plane_depth - ScintPoint[0]), false);
+    }
+    // interpolate in r
+    border_correction = interpolate(vDistances_r_dome, interp_vals, r_distance, false);
+  }
+  else {
+    std::cout << "Error: Invalid optical detector type." << endl;
+    exit(1);
+  }
+ 
+  double hits_rec = border_correction * hits_geo / cosine_vis;
 
   // round final result
-  int hits_vis = std::round(hits_rec_borders);
+  int hits_vis = std::round(hits_rec);
 
   return hits_vis;
 }
@@ -353,6 +388,36 @@ double semi_analytic_hits::Disk_SolidAngle(double d, double h, double b) {
     _mathmore_loaded_ = true;
   }
   return Disk_SolidAngle(x,p);
+}
+
+double semi_analytic_hits::Omega_Dome_Model(const double distance, const double theta) const {
+  // this function calculates the solid angle of a semi-sphere of radius b,
+  // as a correction to the analytic formula of the on-axix solid angle,
+  // as we move off-axis an angle theta. We have used 9-angular bins
+  // with delta_theta width.
+  
+  // par0 = Radius correction close
+  // par1 = Radius correction far
+  // par2 = breaking distance betwween "close" and "far"
+
+  double par0[9] = {0., 0., 0., 0., 0., 0.597542, 1.00872, 1.46993, 2.04221}; 
+  double par1[9] = {0, 0, 0.19569, 0.300449, 0.555598, 0.854939, 1.39166, 2.19141, 2.57732};
+  const double delta_theta = 10.;
+  int j = int(theta/delta_theta);
+  // 8" PMT radius
+  const double b = 8*2.54/2.;
+  // distance form which the model parameters break (empirical value)
+  const double d_break = 5*b;//par2
+  
+  if(distance >= d_break) {
+    double R_apparent_far = b - par1[j];
+    return  (2*3.1416 * (1 - sqrt(1 - pow(R_apparent_far/distance,2))));
+    
+  }
+  else {
+    double R_apparent_close = b - par0[j];
+    return (2*3.1416 * (1 - sqrt(1 - pow(R_apparent_close/distance,2))));
+  }
 }
 
 double semi_analytic_hits::interpolate( const std::vector<double> &xData, const std::vector<double> &yData, double x, bool extrapolate ) {

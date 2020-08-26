@@ -29,6 +29,8 @@ data_output::data_output(const char* output_file_name, const bool include_timing
     event_tree->Branch("event_y_pos", &event_y_pos, "event_y_pos/D");
     event_tree->Branch("event_z_pos", &event_z_pos, "event_z_pos/D");
     event_tree->Branch("event_E", &event_E, "event_E/D");
+    event_tree->Branch("event_time", &event_time, "event_time/D");
+    event_tree->Branch("event_particle_type", &event_particle_type, "event_particle_type/I");
 	// data tree containing all light
 	if (include_timings) { data_tree->Branch("data_time", &data_time, "data_time/D"); }
     data_tree->Branch("data_pmt", &data_pmt, "data_pmt/I");
@@ -61,9 +63,11 @@ data_output::~data_output(){
 }
 
 // function that add event information to output file branch
-void data_output::add_event(const int &event_number, const double &event_energy, const std::vector<double> &event_position) {
+void data_output::add_event(const int &event_number, const double &event_energy, const double &time, const double &particle_type, const std::vector<double> &event_position) {
 	event_no = event_number;
 	event_E = event_energy; 
+	event_time = time;
+	event_particle_type = particle_type;
 	event_x_pos = event_position[0];
 	event_y_pos = event_position[1];
 	event_z_pos = event_position[2];

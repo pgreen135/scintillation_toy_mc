@@ -8,7 +8,9 @@
 class utility_functions {
 
 private:
-	TF1 *fScintillation_function = nullptr;
+	TF1 *fScintillation_function_muon = nullptr;
+	TF1 *fScintillation_function_electron = nullptr;
+	TF1 *fScintillation_function_alpha = nullptr;
 
 public:
 
@@ -23,8 +25,8 @@ public:
 
 	// scintillation function
 	static double scintillation_function( const double *t, const double *par);
-	void initalise_scintillation_function(const double t_singlet, const double t_triplet, const double scint_time_window, const double particle_type);
-	double get_scintillation_time() { return fScintillation_function->GetRandom(); }
+	void initalise_scintillation_functions(const double t_singlet, const double t_triplet, const double scint_time_window);
+	double get_scintillation_time(const int &particle_type);
 
 };
 

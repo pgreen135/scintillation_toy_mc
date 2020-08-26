@@ -34,8 +34,7 @@ time_parameterisation::time_parameterisation(const double &size): step_size{size
 
 // parameterisation generation function
 void time_parameterisation::generateparam(const int &index, const int &angle_bin) {
-    gRandom->SetSeed(0);
-
+   
     // get distance 
     double distance_in_cm = (index * step_size) + 25;
     

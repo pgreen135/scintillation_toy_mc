@@ -25,6 +25,8 @@ private:
 	// event
 	int event_no;
 	double event_E; 
+	double event_time;
+	int event_particle_type;
 	double event_x_pos, event_y_pos, event_z_pos;
 	// data
 	int data_pmt, data_pmt_vuv, data_pmt_vis;
@@ -45,7 +47,7 @@ public:
 	~data_output();
 
 	// add event tree entry
-	void add_event(const int &event_number, const double &event_energy, const std::vector<double> &event_position);
+	void add_event(const int &event_number, const double &event_energy, const double &time, const double &particle_type, const std::vector<double> &event_position);
 
 	// add data tree entry
 	// without times
