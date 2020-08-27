@@ -182,6 +182,8 @@ int main() {
 
             if (OpDetPoint[0] < -50) continue; // 0 photons for opposite TPC
 
+            if (op_channel_type == 0) continue; // 0 photons for arapucas, keep pmts only
+
             // determine number of hits on optical channel via semi-analytic model:
             // VUV
             int num_VUV = 0;
@@ -216,13 +218,14 @@ int main() {
             		double distance_to_pmt = (OpDetPoint-ScintPoint).Mag();
             		double cosine = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2)) / distance_to_pmt;
   					double theta = acos(cosine)*180./3.14159;
-  					int angle_bin = theta/45;	// 45 deg bins	  
+  					int angle_bin = theta/10;	// 45 deg bins	  
             		
             		std::vector<double> transport_time_vuv = times_model.getVUVTime(distance_to_pmt, angle_bin, num_VUV);
             		
             		// total times
             		for(auto& x: transport_time_vuv) {
             			double total_time = (time_list[event] + x + utility.get_scintillation_time(particle_type_list[event])*1e9); // in nanoseconds
+                        //double total_time = (time_list[event] + utility.get_scintillation_time(particle_type_list[event])*1e9); // in nanoseconds
             			total_time_vuv.push_back(total_time);
             		}
             	}
@@ -233,6 +236,7 @@ int main() {
             		// total times
             		for(auto& y: transport_time_vis) {
             			double total_time = (time_list[event] + y + utility.get_scintillation_time(particle_type_list[event])*1e9 ); // in nanoseconds
+                        //double total_time = (time_list[event] + utility.get_scintillation_time(particle_type_list[event])*1e9 ); // in nanoseconds
             			total_time_vis.push_back(total_time);
             		}
             	}

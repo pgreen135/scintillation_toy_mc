@@ -5,7 +5,7 @@
 namespace parameters {
 	
 	// output file
-	const char *output_file_name = "testing.root";
+	const char *output_file_name = "sbnd_michel_electron_9_bins_reduced_width.root";
 
 	// events to generate
 	const bool event_from_file = true;
@@ -52,7 +52,7 @@ namespace parameters {
 	const int scintillation_yield_electron = 20000; 	// Electron: 20000 photons/MeV at 500 V/m
 	const int scintillation_yield_alpha = 20000; 		// Alpha: 20000 photons/MeV at 500 V/m
 	const double t_singlet = 0.000000006; 		// 6ns 
-	const double t_triplet = 0.0000015; 		// 1.5 us
+	const double t_triplet = 0.000001590; 		// 1.590 us
 	const double scint_time_window = 0.00001; 	// 10 us
 	
 		

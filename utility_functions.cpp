@@ -55,11 +55,11 @@ double utility_functions::scintillation_function(const double *t, const double *
 	  singlet_part = 0.23;
 	  triplet_part = 0.77;
 	}
-	if(type == 0){ // particle is an electron
+	if(type == 1){ // particle is an electron
 	  singlet_part = 0.27;
 	  triplet_part = 0.73;
 	}
-	if(type == 1){ // particle is an alpha
+	if(type == 2){ // particle is an alpha
 	  singlet_part = 0.70;
 	  triplet_part = 0.30;
 	}
@@ -77,17 +77,20 @@ void utility_functions::initalise_scintillation_functions(const double t_singlet
 	fScintillation_function_muon = new TF1("Scintillation Timing Muon", scintillation_function, 0, scint_time_window, 3);
 	fScintillation_function_muon->SetParameter(0, t_singlet); 
     fScintillation_function_muon->SetParameter(1, t_triplet);  
-    fScintillation_function_muon->FixParameter(2, 0); 	// muon  
+    fScintillation_function_muon->FixParameter(2, 0); 	// muon
+    fScintillation_function_muon->SetNpx(50000);     
     // electron
     fScintillation_function_electron = new TF1("Scintillation Timing Electron", scintillation_function, 0, scint_time_window, 3);
 	fScintillation_function_electron->SetParameter(0, t_singlet); 
     fScintillation_function_electron->SetParameter(1, t_triplet);  
-    fScintillation_function_electron->FixParameter(2, 1); 	// electron  
+    fScintillation_function_electron->FixParameter(2, 1); 	// electron
+    fScintillation_function_electron->SetNpx(50000);     
     // alpha
     fScintillation_function_alpha = new TF1("Scintillation Timing Alpha", scintillation_function, 0, scint_time_window, 3);
 	fScintillation_function_alpha->SetParameter(0, t_singlet); 
     fScintillation_function_alpha->SetParameter(1, t_triplet);  
-    fScintillation_function_alpha->FixParameter(2, 2); 	// alpha  
+    fScintillation_function_alpha->FixParameter(2, 2); 	// alpha 
+    fScintillation_function_alpha->SetNpx(50000);    
 }
 
 double utility_functions::get_scintillation_time(const int &particle_type) {

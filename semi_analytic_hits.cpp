@@ -38,7 +38,7 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
   // calculate solid angle:
   double solid_angle = 0;
   // rectangular aperture
-  if (optical_detector_type == 1) {
+  if (optical_detector_type == 0) {
     // set Arapuca geometry struct for solid angle function
     acc detPoint; 
     detPoint.ax = OpDetPoint[0]; detPoint.ay = OpDetPoint[1]; detPoint.az = OpDetPoint[2];  // centre coordinates of optical detector
@@ -51,7 +51,7 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
     solid_angle = solid(detPoint, ScintPoint_rel);
   }
   // disk aperture
-  else if (optical_detector_type == 0) {
+  else if (optical_detector_type == 1) {
     // offset in z-y plane
     double d = sqrt(pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
     // drift distance (in x)
@@ -190,7 +190,7 @@ int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &Sci
   // solid angle :
   double solid_angle_detector = 0;
   // rectangular aperture
-  if (optical_detector_type == 1) {
+  if (optical_detector_type == 0) {
     // set Arapuca geometry struct for solid angle function
     acc detPoint; 
     detPoint.ax = OpDetPoint[0]; detPoint.ay = OpDetPoint[1]; detPoint.az = OpDetPoint[2];  // centre coordinates of optical detector
@@ -204,7 +204,7 @@ int semi_analytic_hits::VisHits(const int &Nphotons_created, const TVector3 &Sci
     solid_angle_detector = solid(detPoint, emission_relative);
   }  
   // disk aperture
-  else if (optical_detector_type == 0) {
+  else if (optical_detector_type == 1) {
     // offset in z-y plane
     double d = sqrt(pow(hotspot[1] - OpDetPoint[1],2) + pow(hotspot[2] - OpDetPoint[2],2));
     // drift distance (in x)
