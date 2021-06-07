@@ -4,7 +4,7 @@
 namespace parameters {
 	
 	// output file
-	const char *output_file_name = "testing_xenon.root";
+	const char *output_file_name = "testing.root";
 
 
     ///-------------------------------------
@@ -14,17 +14,17 @@ namespace parameters {
     const bool simulate_xenon = true;   // enables xenon doping, false = pure argon
 
     // WLS Reflective foils
-    const bool include_reflected = false; // enables WLS relfective foils on the cathode (visible light)
+    const bool include_reflected = false; // enables WLS relfective foils on the cathode (visible light) -- not applicable for VD
 
     // Timings
-    const bool include_timings = true;   // enables timings (emission and transport)  
+    const bool include_timings = false;   // enables timings (emission and transport)  
 
 
     ///-------------------------------------
     //--------WHAT events to generate?------
     ///-------------------------------------
     bool fixed_energy = true; //If gamma activity this will be set to true in the analyze_light.cpp
-    double fixedE = 15.0; //Set to -1.0 to check if fixed value has been correctly assigned
+    double fixedE = 25.0;
     
     const double particle_type = 0;   // ionising particle type: 0 - electron, 1 - alpha
 
@@ -63,12 +63,15 @@ namespace parameters {
 	//---------Dimensions of event region-----------
 	//----------------------------------------------
 	// region to generate events in
-    const double x_position_range[2] {5,360};	// cm from anode [Note can get problems from too much light if generating events < 5 cm from anode]
+    const double x_position_range[2] {-320,320};	// cm 
 	const double y_position_range[2] {-600,600};	// cm
-	//const double z_position_range[2] {400,1000};	// cm [this comes from the "middle third"]
-    const double z_position_range[2] {0,1400};   // cm
-
-
+	const double z_position_range[2] {10,2000};   // cm    
+    
+    //-------------------------------------
+    //----Number of Events-----------------
+    //-------------------------------------
+    // Fixed energy (electron like) events:
+    const int max_events_FE = 10000;
 
     //chrisflynn mass
     const double entire_mass = 0.001396*(x_position_range[1]-x_position_range[0])*(y_position_range[1]-y_position_range[0])*(z_position_range[1]-z_position_range[0]); //density = 1.396 g/cm^3
@@ -77,12 +80,6 @@ namespace parameters {
     const double frame_time = 0.0025; // 2.5 miliseconds; equivalent to the drift time of electrons in DUNE
     const double time_window = 1; //readout window (running time of the simulation in seconds)
     const double time_frames = int(time_window/frame_time); // number of frames registered
-    
-    //-------------------------------------
-    //----Number of Events-----------------
-    //-------------------------------------
-    // Fixed energy (electron like) events:
-    const int max_events_FE = 10000;
     
 	// Ar-39 events:
     //const int max_events_Ar = activity_Ar * entire_mass * time_window;//FULL volume for 1 TPC
@@ -125,10 +122,10 @@ namespace parameters {
 
     // TPC boundaries (for alpha-gammas)
     const double max_x = 363.0;
-    const double min_x = 1.0;
+    const double min_x = -363.0;
     const double max_y = 600.0;
     const double min_y = -600.0;
-    const double max_z = 1400.0;
+    const double max_z = 2000.0;
     const double min_z = 0.0;
 
     // timing parametersiation properties
@@ -147,6 +144,8 @@ namespace parameters {
  
     // cathode foils/TPB coverage
 	const double cathode_tpb_frac = 0.8;
+
+    const double field_cage_transparency = 0.7; // transparency of field cage for lateral PDs       
 
 	// scintillation properties
 	const int scintillation_yield = 24000; 		// 24000 photons/MeV at 500 V/m

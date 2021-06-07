@@ -7,4 +7,5 @@
 *.pid
 analyze_light
 
+!dunevd_4x7_base_mapping.txt
 !optical_detectors_dune1x2x6.txt

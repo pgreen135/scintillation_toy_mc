@@ -29,11 +29,19 @@ semi_analytic_hits::semi_analytic_hits() {
 }
 
 // VUV hits calculation
-int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type, const int &scintillation_type) {
+int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type, const int &optical_detector_orientation, const int &scintillation_type) {
   
   // distance and angle between ScintPoint and OpDetPoint
   double distance = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
-  double cosine = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2)) / distance;
+  double cosine = 0;
+  // anode/cathode detectors -- fixed in x dimension
+  if (optical_detector_orientation == 0) cosine = std::abs(ScintPoint[0] - OpDetPoint[0]) / distance;
+  // laterals -- fixed in y dimension
+  else if (optical_detector_orientation == 1) cosine = std::abs(ScintPoint[1] - OpDetPoint[1]) / distance;
+  else {
+    std::cout << "Error: Invalid optical detector orientation." << endl;
+    exit(1);
+  }
   double theta = acos(cosine)*180./pi;
 
   // calculate solid angle:
@@ -49,7 +57,10 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
     TVector3 ScintPoint_rel = ScintPoint - OpDetPoint;  
 
     // calculate solid angle
-    solid_angle = solid(detPoint, ScintPoint_rel);
+    // anode/cathode detectors
+    if (optical_detector_orientation == 0) solid_angle = solid(detPoint, ScintPoint_rel);
+    // laterals
+    else if (optical_detector_orientation == 1) solid_angle = solid_lateral(detPoint, ScintPoint_rel);
   }
   // disk aperture
   else if (optical_detector_type == 0) {
@@ -108,7 +119,7 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
   }
   // dome PDs
   else if (optical_detector_type == 2) {
-    std::cout << "Error: Corrections not yet implementation for dome detectors, not required in DUNE-SP." << endl;
+    std::cout << "Error: Corrections not yet implementation for dome detectors, not required in DUNE-VD." << endl;
     exit(1);
   }
   else {
@@ -364,6 +375,65 @@ double semi_analytic_hits::solid(const acc& out, const TVector3 &v) const{
     a = out.w;
     b = out.h;
     d = abs(v.X());
+    double to_return = (omega(2*(a-A),2*(B+b),d)-omega(2*(a-A),2*B,d)+omega(2*A,2*(B+b),d)-omega(2*A,2*B,d))/4.0;
+    return to_return;
+  }
+  // error message if none of these cases, i.e. something has gone wrong!
+  std::cout << "Warning: invalid solid angle call." << std::endl;
+  return 0.0;
+}
+
+double semi_analytic_hits::solid_lateral(const acc& out, const TVector3 &v) const {
+  
+  //v is the position of the track segment with respect to
+  //the center position of the arapuca window
+  
+  // arapuca plane fixed in y direction
+  
+  if( v.X()==0.0 && v.Z()==0.0){
+    return omega(out.w,out.h,v.Y());
+  }
+  
+  if( (std::abs(v.X()) > out.w/2.0) && (std::abs(v.Z()) > out.h/2.0)){
+    double A, B, a, b, d;
+    A = std::abs(v.X())-out.w/2.0;
+    B = std::abs(v.Z())-out.h/2.0;
+    a = out.w;
+    b = out.h;
+    d = std::abs(v.Y());
+    double to_return = (omega(2*(A+a),2*(B+b),d)-omega(2*A,2*(B+b),d)-omega(2*(A+a),2*B,d)+omega(2*A,2*B,d))/4.0;
+    return to_return;
+  }
+  
+  if( (std::abs(v.X()) <= out.w/2.0) && (std::abs(v.Z()) <= out.h/2.0)){
+    double A, B, a, b, d;
+    A = -std::abs(v.X())+out.w/2.0;
+    B = -std::abs(v.Z())+out.h/2.0;
+    a = out.w;
+    b = out.h;
+    d = std::abs(v.Y());
+    double to_return = (omega(2*(a-A),2*(b-B),d)+omega(2*A,2*(b-B),d)+omega(2*(a-A),2*B,d)+omega(2*A,2*B,d))/4.0;
+    return to_return;
+  }
+  
+  if( (std::abs(v.X()) > out.w/2.0) && (std::abs(v.Z()) <= out.h/2.0)){
+    double A, B, a, b, d;
+    A = std::abs(v.X())-out.w/2.0;
+    B = -std::abs(v.Z())+out.h/2.0;
+    a = out.w;
+    b = out.h;
+    d = std::abs(v.Y());
+    double to_return = (omega(2*(A+a),2*(b-B),d)-omega(2*A,2*(b-B),d)+omega(2*(A+a),2*B,d)-omega(2*A,2*B,d))/4.0;
+    return to_return;
+  }
+  
+  if( (std::abs(v.X()) <= out.w/2.0) && (std::abs(v.Z()) > out.h/2.0)){
+    double A, B, a, b, d;
+    A = -std::abs(v.X())+out.w/2.0;
+    B = std::abs(v.Z())-out.h/2.0;
+    a = out.w;
+    b = out.h;
+    d = std::abs(v.Y());
     double to_return = (omega(2*(a-A),2*(B+b),d)-omega(2*(a-A),2*B,d)+omega(2*A,2*(B+b),d)-omega(2*A,2*B,d))/4.0;
     return to_return;
   }

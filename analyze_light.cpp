@@ -41,9 +41,28 @@ int main() {
   utility.initalise_scintillation_functions_xenon(parameters::t_singlet_Xe, parameters::t_triplet_Xe, parameters::singlet_fraction_Xe, parameters::triplet_fraction_Xe,
                                                   parameters::scint_time_window);
 
-	// ------- Read photon detector positions and types --------
-	std::vector<std::vector<int>> opdet_type;
-	std::vector<std::vector<double>> opdet_position;
+  // ------- Read photon detector positions and types --------
+  std::vector<std::vector<int>> opdet_type;
+  std::vector<std::vector<double>> opdet_position;
+
+  std::cout << "Loading Photon Detector positions..." << std::endl;
+  std::ifstream detector_positions_file;
+  detector_positions_file.open("dunevd_4x7_base_mapping.txt");
+  if(detector_positions_file.is_open()) std::cout << "File opened successfully" << std::endl;
+  else {std::cout << "File not found." << std::endl; exit(1);}
+  while(!detector_positions_file.eof()) {
+      int num_opdet, type_opdet, orientation_opdet; double x_opdet, y_opdet, z_opdet;
+      if(detector_positions_file >> num_opdet >> x_opdet >> y_opdet >> z_opdet >> type_opdet >> orientation_opdet) {
+          std::vector<int> type({num_opdet, type_opdet, orientation_opdet});
+          std::vector<double> position({x_opdet, y_opdet, z_opdet});         
+          opdet_type.push_back(type);
+          opdet_position.push_back(position);
+      }
+      else{ break; }
+  }
+  detector_positions_file.close();
+  int number_opdets = opdet_type.size();
+  std::cout << "Positions Loaded: " << number_opdets << " optical detectors." << std::endl << std::endl;
 
 
         //---Alpha-gamma parameters
@@ -222,25 +241,6 @@ int main() {
         }
 
 
-	std::cout << "Loading Photon Detector positions..." << std::endl;
-        std::ifstream detector_positions_file;
-        detector_positions_file.open("optical_detectors_dune1x2x6.txt");
-        if(detector_positions_file.is_open()) std::cout << "File opened successfully" << std::endl;
-        else {std::cout << "File not found." << std::endl; exit(1);}
-        while(!detector_positions_file.eof()) {
-        int num_opdet, type_opdet; double x_opdet, y_opdet, z_opdet;
-        if(detector_positions_file >> num_opdet >> x_opdet >> y_opdet >> z_opdet >> type_opdet) {
-            std::vector<int> type({num_opdet, type_opdet});
-            std::vector<double> position({x_opdet, y_opdet, z_opdet});         
-            opdet_type.push_back(type);
-            opdet_position.push_back(position);
-        }
-        else{ break; }
-    }
-    detector_positions_file.close();
-    int number_opdets = opdet_type.size();
-    std::cout << "Positions Loaded: " << number_opdets << " optical detectors." << std::endl << std::endl;
-
     // ----------- Create Events ------------//
     //generate event positions and energies, storing information in output file	
     std::vector<double> energy_list; 
@@ -413,6 +413,9 @@ int main() {
       // get optical detector type - rectangular or disk aperture
       int op_channel_type = opdet_type[op_channel][1];
 
+      // get optical detector orientation - cathode (x) == 0, lateral (y) == 1
+      int op_channel_orientation = opdet_type[op_channel][2];
+
       // get detection channel coordinates (in cm)
       TVector3 OpDetPoint(opdet_position[op_channel][0],opdet_position[op_channel][1],opdet_position[op_channel][2]);
 
@@ -424,9 +427,11 @@ int main() {
       int num_VUV_Xe = 0;
       if (parameters::simulate_xenon == false) { // argon only case            
         // incident photons
-        int num_VUV_geo = hits_model.VUVHits(number_photons, ScintPoint, OpDetPoint, op_channel_type, 0);       // calculate hits       
-        // apply additional factors QE etc.            
-        for(int i = 0; i < num_VUV_geo; i++) if (gRandom->Uniform(1.) <= globalQE_VUV) num_VUV_Ar++;
+        int num_VUV_geo = hits_model.VUVHits(number_photons, ScintPoint, OpDetPoint, op_channel_type, op_channel_orientation, 0);       // calculate hits       
+        // apply additional factors QE etc.
+        double detectorQE_VUV = globalQE_VUV;
+        if (op_channel_orientation == 1) detectorQE_VUV = globalQE_VUV * parameters::field_cage_transparency; //laterals                
+        for(int i = 0; i < num_VUV_geo; i++) if (gRandom->Uniform(1.) <= detectorQE_VUV) num_VUV_Ar++;
       }
       if (parameters::simulate_xenon == true) { // xenon doped case         
         // split into prompt and late light
@@ -434,11 +439,13 @@ int main() {
         int number_photons_Xe = std::round(number_photons*triplet_fraction);
 
         // incident photons
-        int num_VUV_geo_Ar = hits_model.VUVHits(number_photons_Ar, ScintPoint, OpDetPoint, op_channel_type, 0);       // prompt light as argon
-        int num_VUV_geo_Xe = hits_model.VUVHits(number_photons_Xe, ScintPoint, OpDetPoint, op_channel_type, 1);       // late light as xenon       
-        // apply additional factors QE etc.            
-        for(int i = 0; i < num_VUV_geo_Ar; i++) if (gRandom->Uniform(1.) <= globalQE_VUV) num_VUV_Ar++;
-        for(int i = 0; i < num_VUV_geo_Xe; i++) if (gRandom->Uniform(1.) <= globalQE_VUV) num_VUV_Xe++;
+        int num_VUV_geo_Ar = hits_model.VUVHits(number_photons_Ar, ScintPoint, OpDetPoint, op_channel_type, op_channel_orientation, 0);       // prompt light as argon
+        int num_VUV_geo_Xe = hits_model.VUVHits(number_photons_Xe, ScintPoint, OpDetPoint, op_channel_type, op_channel_orientation, 1);       // late light as xenon       
+        // apply additional factors QE etc.
+        double detectorQE_VUV = globalQE_VUV;
+        if (op_channel_orientation == 1) detectorQE_VUV = globalQE_VUV * parameters::field_cage_transparency; //laterals            
+        for(int i = 0; i < num_VUV_geo_Ar; i++) if (gRandom->Uniform(1.) <= detectorQE_VUV) num_VUV_Ar++;
+        for(int i = 0; i < num_VUV_geo_Xe; i++) if (gRandom->Uniform(1.) <= detectorQE_VUV) num_VUV_Xe++;
       }  
 
       // Visible (foils)
