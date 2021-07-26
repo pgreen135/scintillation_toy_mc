@@ -4,7 +4,7 @@
 namespace parameters {
 	
 	// output file
-	const char *output_file_name = "testing_2.root";
+	const char *output_file_name = "testing_3.root";
 
 
     ///-------------------------------------
