@@ -81,7 +81,7 @@ void time_parameterisation::generateparam(const int &index, const int &angle_bin
         }
         //delete fint;   
         double parsfinal[7] = {t_int, pars_landau[0], pars_landau[1], pars_landau[2], pars_expo[0], pars_expo[1], t_direct_min};
-        fVUVTiming.SetParameters(parsfinal);    
+        fVUVTiming.SetParameters(parsfinal); 
     }
 
     // calculate max and min distance relevant to sample parameterisation 
@@ -105,8 +105,9 @@ void time_parameterisation::generateparam(const int &index, const int &angle_bin
 
     // generate the sampling
     // the first call of GetRandom generates the timing sampling and stores it in the TF1 object, this is the slow part
-    // all subsequent calls check if it has been generated previously and are ~100+ times quicker
+    // all subsequent calls check if it has been generated previously and are ~100+ times quicker    
     double arrival_time = fVUVTiming.GetRandom(min,max);
+
     // add timing to the vector of timings and range to vectors of ranges
     VUV_timing[angle_bin][index] = fVUVTiming;
     VUV_max[angle_bin][index] = max;

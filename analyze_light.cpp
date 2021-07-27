@@ -493,7 +493,10 @@ int main() {
           
           // transport times
           double distance_to_pmt = (OpDetPoint-ScintPoint).Mag();
-          double cosine = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2)) / distance_to_pmt;
+          double cosine; 
+          
+          if (op_channel_orientation == 1) cosine = sqrt(pow(ScintPoint[1] - OpDetPoint[1],2)) / distance_to_pmt; //laterals                
+          else cosine =  sqrt(pow(ScintPoint[0] - OpDetPoint[0],2)) / distance_to_pmt;
           double theta = acos(cosine)*180./3.14159;
           int angle_bin = theta/45;       // 45 deg bins    
 

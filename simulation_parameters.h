@@ -17,14 +17,14 @@ namespace parameters {
     const bool include_reflected = false; // enables WLS relfective foils on the cathode (visible light) -- not applicable for VD
 
     // Timings
-    const bool include_timings = false;   // enables timings (emission and transport)  
+    const bool include_timings = true;   // enables timings (emission and transport)  
 
 
     ///-------------------------------------
     //--------WHAT events to generate?------
     ///-------------------------------------
     bool fixed_energy = true; //If gamma activity this will be set to true in the analyze_light.cpp
-    double fixedE = 25.0;
+    double fixedE = 10.0;
     
     const double particle_type = 0;   // ionising particle type: 0 - electron, 1 - alpha
 
